@@ -326,7 +326,7 @@ public abstract class InStream extends InputStream {
       currentOffset += compressed.remaining();
       len -= compressed.remaining();
       copy.put(compressed);
-      ListIterator<DiskRange> iter = bytes.listIterator(currentRange);
+      ListIterator<DiskRange> iter = bytes.listIterator(currentRange + 1);
 
       while (len > 0 && iter.hasNext()) {
         ++currentRange;
@@ -341,6 +341,7 @@ public abstract class InStream extends InputStream {
           copy.put(slice);
           currentOffset += len;
           compressed.position(compressed.position() + len);
+          copy.flip();  // Prepare copy for reading
           return copy;
         }
         currentOffset += compressed.remaining();
