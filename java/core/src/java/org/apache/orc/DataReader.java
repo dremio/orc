@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.hadoop.hive.common.io.DiskRangeList;
 import org.apache.orc.impl.OrcIndex;
+import org.apache.orc.impl.HadoopShims.ByteBufferPoolShim;
 
 /** An abstract data reader that IO formats can use to read bytes from underlying storage. */
 public interface DataReader extends AutoCloseable, Cloneable {
@@ -67,6 +68,12 @@ public interface DataReader extends AutoCloseable, Cloneable {
    * @param toRelease The buffer to release.
    */
   void releaseBuffer(ByteBuffer toRelease);
+
+  /**
+   * Returns byte buffer pool that ORC readers use
+   * @return The byte buffer pool used by ORC readers
+   */
+  ByteBufferPoolShim getBufferPool();
 
   /**
    * Clone the entire state of the DataReader with the assumption that the

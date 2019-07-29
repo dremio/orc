@@ -1173,7 +1173,7 @@ public class RecordReaderImpl implements RecordReader {
           ranges, streamOffset, streamDesc.getLength());
       StreamName name = new StreamName(column, streamDesc.getKind());
       streams.put(name, InStream.create(name.toString(), buffers,
-          streamDesc.getLength(), codec, bufferSize));
+          streamDesc.getLength(), codec, bufferSize, dataReader.getBufferPool()));
       streamOffset += streamDesc.getLength();
     }
   }

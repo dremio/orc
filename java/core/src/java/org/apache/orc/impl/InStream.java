@@ -164,10 +164,15 @@ public abstract class InStream extends InputStream {
     }
   }
 
-  private static ByteBuffer allocateBuffer(int size, boolean isDirect) {
+  private static ByteBuffer allocateBuffer(HadoopShims.ByteBufferPoolShim pool, int size, boolean isDirect) {
     // TODO: use the same pool as the ORC readers
     if (isDirect) {
-      return ByteBuffer.allocateDirect(size);
+      if (pool == null) {
+        return ByteBuffer.allocateDirect(size);
+      }
+      else  {
+        return pool.getBuffer(isDirect, size);
+      }
     } else {
       return ByteBuffer.allocate(size);
     }
@@ -177,24 +182,33 @@ public abstract class InStream extends InputStream {
     private final List<DiskRange> bytes;
     private final int bufferSize;
     private ByteBuffer uncompressed;
+    private ByteBuffer uncompressedAllocatedBuffer;
     private final CompressionCodec codec;
     private ByteBuffer compressed;
     private long currentOffset;
     private int currentRange;
     private boolean isUncompressedOriginal;
+    private HadoopShims.ByteBufferPoolShim pool;
 
     public CompressedStream(String name, List<DiskRange> input, long length,
-                            CompressionCodec codec, int bufferSize) {
+                            CompressionCodec codec, int bufferSize,
+                            HadoopShims.ByteBufferPoolShim pool) {
       super(name, length);
       this.bytes = input;
       this.codec = codec;
       this.bufferSize = bufferSize;
       currentOffset = 0;
       currentRange = 0;
+      this.pool = pool;
+      this.uncompressedAllocatedBuffer = null;
     }
 
     private void allocateForUncompressed(int size, boolean isDirect) {
-      uncompressed = allocateBuffer(size, isDirect);
+      if (uncompressedAllocatedBuffer == null) {
+        uncompressedAllocatedBuffer = allocateBuffer(this.pool, size, isDirect);
+      }
+      uncompressedAllocatedBuffer.clear();
+      uncompressed = uncompressedAllocatedBuffer;
     }
 
     private void readHeader() throws IOException {
@@ -275,6 +289,12 @@ public abstract class InStream extends InputStream {
 
     @Override
     public void close() {
+      if ( pool != null &&
+              uncompressedAllocatedBuffer != null &&
+              uncompressedAllocatedBuffer.isDirect()) {
+        pool.putBuffer(uncompressedAllocatedBuffer);
+        uncompressedAllocatedBuffer = null;
+      }
       uncompressed = null;
       compressed = null;
       currentRange = bytes.size();
@@ -322,7 +342,7 @@ public abstract class InStream extends InputStream {
 
       // we need to consolidate 2 or more buffers into 1
       // first copy out compressed buffers
-      ByteBuffer copy = allocateBuffer(chunkLength, compressed.isDirect());
+      ByteBuffer copy = allocateBuffer(this.pool, chunkLength, compressed.isDirect());
       currentOffset += compressed.remaining();
       len -= compressed.remaining();
       copy.put(compressed);
@@ -437,7 +457,7 @@ public abstract class InStream extends InputStream {
     for (int i = 0; i < buffers.length; ++i) {
       input.add(new BufferChunk(buffers[i], offsets[i]));
     }
-    return create(streamName, input, length, codec, bufferSize);
+    return create(streamName, input, length, codec, bufferSize, null);
   }
 
   /**
@@ -454,11 +474,12 @@ public abstract class InStream extends InputStream {
                                 List<DiskRange> input,
                                 long length,
                                 CompressionCodec codec,
-                                int bufferSize) throws IOException {
+                                int bufferSize,
+                                HadoopShims.ByteBufferPoolShim pool) throws IOException {
     if (codec == null) {
       return new UncompressedStream(name, input, length);
     } else {
-      return new CompressedStream(name, input, length, codec, bufferSize);
+      return new CompressedStream(name, input, length, codec, bufferSize, pool);
     }
   }
 
@@ -479,7 +500,7 @@ public abstract class InStream extends InputStream {
       long length,
       CompressionCodec codec,
       int bufferSize) throws IOException {
-    InStream inStream = create(name, input, length, codec, bufferSize);
+    InStream inStream = create(name, input, length, codec, bufferSize, null);
     CodedInputStream codedInputStream = CodedInputStream.newInstance(inStream);
     codedInputStream.setSizeLimit(PROTOBUF_MESSAGE_MAX_LIMIT);
     return codedInputStream;

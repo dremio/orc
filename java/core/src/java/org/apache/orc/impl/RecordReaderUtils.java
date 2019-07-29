@@ -305,6 +305,11 @@ public class RecordReaderUtils {
     }
 
     @Override
+    public HadoopShims.ByteBufferPoolShim getBufferPool() {
+      return null;
+    }
+
+    @Override
     public DataReader clone() {
       if (this.file != null) {
         // We should really throw here, but that will cause failures in Hive.

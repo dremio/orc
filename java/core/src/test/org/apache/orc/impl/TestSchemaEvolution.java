@@ -1048,7 +1048,7 @@ public class TestSchemaEvolution {
     }
     ranges.add(new BufferChunk(ByteBuffer.wrap(buffer), 0));
     streams.put(name, InStream.create(name.toString(), ranges, values.length, null,
-        values.length));
+        values.length, null));
   }
 
   @Test
