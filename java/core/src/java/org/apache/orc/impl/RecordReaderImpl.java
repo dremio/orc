@@ -1190,7 +1190,7 @@ public class RecordReaderImpl implements RecordReader {
       Map<StreamName, InStream> streams) throws IOException {
     long streamOffset = 0;
     InStream.StreamOptions options = InStream.options().withCodec(codec)
-        .withBufferSize(bufferSize);
+        .withBufferSize(bufferSize).withBufferPool(dataReader.getBufferPool());
     for (OrcProto.Stream streamDesc : streamDescriptions) {
       int column = streamDesc.getColumn();
       if ((includeColumn != null &&

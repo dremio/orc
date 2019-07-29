@@ -196,10 +196,15 @@ public abstract class InStream extends InputStream {
     }
   }
 
-  private static ByteBuffer allocateBuffer(int size, boolean isDirect) {
+  private static ByteBuffer allocateBuffer(HadoopShims.ByteBufferPoolShim pool, int size, boolean isDirect) {
     // TODO: use the same pool as the ORC readers
     if (isDirect) {
-      return ByteBuffer.allocateDirect(size);
+      if (pool == null) {
+        return ByteBuffer.allocateDirect(size);
+      }
+      else  {
+        return pool.getBuffer(isDirect, size);
+      }
     } else {
       return ByteBuffer.allocate(size);
     }
@@ -340,11 +345,13 @@ public abstract class InStream extends InputStream {
     private DiskRangeList bytes;
     private final int bufferSize;
     private ByteBuffer uncompressed;
+    private ByteBuffer uncompressedAllocatedBuffer;
     private final CompressionCodec codec;
     protected ByteBuffer compressed;
     protected long currentOffset;
     protected DiskRangeList currentRange;
     private boolean isUncompressedOriginal;
+    private HadoopShims.ByteBufferPoolShim pool;
 
     /**
      * Create the stream without resetting the input stream.
@@ -360,6 +367,8 @@ public abstract class InStream extends InputStream {
       super(name, length);
       this.codec = options.codec;
       this.bufferSize = options.bufferSize;
+      this.pool = null;
+      this.uncompressedAllocatedBuffer = null;
     }
 
     /**
@@ -376,6 +385,8 @@ public abstract class InStream extends InputStream {
       super(name, length);
       this.codec = options.codec;
       this.bufferSize = options.bufferSize;
+      this.pool = options.pool;
+      this.uncompressedAllocatedBuffer = null;
       reset(input, length);
     }
 
@@ -392,7 +403,11 @@ public abstract class InStream extends InputStream {
     }
 
     private void allocateForUncompressed(int size, boolean isDirect) {
-      uncompressed = allocateBuffer(size, isDirect);
+      if (uncompressedAllocatedBuffer == null) {
+        uncompressedAllocatedBuffer = allocateBuffer(this.pool, size, isDirect);
+      }
+      uncompressedAllocatedBuffer.clear();
+      uncompressed = uncompressedAllocatedBuffer;
     }
 
     protected void setCurrent(DiskRangeList newRange,
@@ -482,6 +497,12 @@ public abstract class InStream extends InputStream {
 
     @Override
     public void close() {
+      if ( pool != null &&
+            uncompressedAllocatedBuffer != null &&
+            uncompressedAllocatedBuffer.isDirect()) {
+        pool.putBuffer(uncompressedAllocatedBuffer);
+        uncompressedAllocatedBuffer = null;
+      }
       uncompressed = null;
       compressed = null;
       currentRange = null;
@@ -530,7 +551,7 @@ public abstract class InStream extends InputStream {
 
       // we need to consolidate 2 or more buffers into 1
       // first copy out compressed buffers
-      ByteBuffer copy = allocateBuffer(chunkLength, compressed.isDirect());
+      ByteBuffer copy = allocateBuffer(this.pool, chunkLength, compressed.isDirect());
       currentOffset += compressed.remaining();
       len -= compressed.remaining();
       copy.put(compressed);
@@ -652,6 +673,7 @@ public abstract class InStream extends InputStream {
     private EncryptionAlgorithm algorithm;
     private Key key;
     private byte[] iv;
+    private HadoopShims.ByteBufferPoolShim pool;
 
     public StreamOptions withCodec(CompressionCodec value) {
       this.codec = value;
@@ -669,6 +691,11 @@ public abstract class InStream extends InputStream {
       this.algorithm = algorithm;
       this.key = key;
       this.iv = iv;
+      return this;
+    }
+
+    public StreamOptions withBufferPool(HadoopShims.ByteBufferPoolShim pool) {
+      pool = pool;
       return this;
     }
 
