@@ -77,7 +77,6 @@ class ZeroCopyShims {
 
     @Override
     public final void close() throws IOException {
-      this.in.close();
     }
   }
 
