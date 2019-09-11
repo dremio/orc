@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "fb495b4e_05385233",
+        "filename": "java/core/src/java/org/apache/orc/impl/RecordReaderUtils.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 321,
+      "author": {
+        "id": 1000057
+      },
+      "writtenOn": "2019-09-11T06:04:36Z",
+      "side": 1,
+      "message": "I looked at this change. It looks different from the earlier one. Also, I am not familiar with this code.\n\nI think we should wait for Vamsi to be back in a few hours and review this change.",
+      "parentUuid": "c3595205_2143f106",
+      "revId": "711c3dc9534f9f1092ed702762ebba5d9bbe3afc",
+      "serverId": "8ca9cf2d-83f4-421d-8552-b009c9e056de",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "c6d73e9b_a381bd16",
         "filename": "java/core/src/java/org/apache/orc/impl/RecordReaderUtils.java",
         "patchSetId": 1
