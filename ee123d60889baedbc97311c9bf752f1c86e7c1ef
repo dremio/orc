@@ -1,0 +1,7 @@
+Code-Review+2: Kyle Porter <kporter@dremio.com>
+Verified+1: jenkins (via gerrit)
+Submitted-by: Thippana Vamsi Kalyan <vamsi@dremio.com>
+Submitted-at: Wed, 11 Sep 2019 02:56:49 +0000
+Reviewed-on: https://gnarly.drem.io/gerrit/14601
+Project: orc
+Branch: refs/heads/branch-1.5.1-dremio
