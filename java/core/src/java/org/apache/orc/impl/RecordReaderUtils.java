@@ -23,8 +23,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -154,6 +157,7 @@ public class RecordReaderUtils {
     private final int bufferSize;
     private final int typeCount;
     private CompressionKind compressionKind;
+    private final Set<ByteBuffer> buffersToRelease = Collections.newSetFromMap(new IdentityHashMap<ByteBuffer, Boolean>());
 
     private DefaultDataReader(DataReaderProperties properties) {
       this.fs = properties.getFileSystem();
@@ -207,7 +211,7 @@ public class RecordReaderUtils {
       DiskRangeList ranges = planIndexReading(fileSchema, footer,
           ignoreNonUtf8BloomFilter, included, sargColumns, version,
           bloomFilterKinds);
-      ranges = readDiskRanges(file, zcr, stripe.getOffset(), ranges, false);
+      ranges = readDiskRanges(file, zcr, stripe.getOffset(), ranges, false, buffersToRelease);
       long offset = 0;
       DiskRangeList range = ranges;
       for(OrcProto.Stream stream: footer.getStreamsList()) {
@@ -273,11 +277,19 @@ public class RecordReaderUtils {
     @Override
     public DiskRangeList readFileData(
         DiskRangeList range, long baseOffset, boolean doForceDirect) throws IOException {
-      return RecordReaderUtils.readDiskRanges(file, zcr, baseOffset, range, doForceDirect);
+      return RecordReaderUtils.readDiskRanges(file, zcr, baseOffset, range, doForceDirect, buffersToRelease);
     }
 
     @Override
     public void close() throws IOException {
+
+      if (isTrackingDiskRanges()) {
+        for (ByteBuffer buffer : buffersToRelease) {
+          releaseBufferWithoutTracking(buffer);
+        }
+        buffersToRelease.clear();
+      }
+
       if (codec != null) {
         OrcCodecPool.returnCodec(compressionKind, codec);
         codec = null;
@@ -301,7 +313,14 @@ public class RecordReaderUtils {
 
     @Override
     public void releaseBuffer(ByteBuffer buffer) {
-      zcr.releaseBuffer(buffer);
+      buffersToRelease.remove(buffer);
+      releaseBufferWithoutTracking(buffer);
+    }
+
+    private void releaseBufferWithoutTracking(ByteBuffer buffer) {
+      if (zcr != null) {
+        zcr.releaseBuffer(buffer);
+      }
     }
 
     @Override
@@ -526,7 +545,8 @@ public class RecordReaderUtils {
                                       HadoopShims.ZeroCopyReaderShim zcr,
                                  long base,
                                  DiskRangeList range,
-                                 boolean doForceDirect) throws IOException {
+                                 boolean doForceDirect,
+                                 Set<ByteBuffer> buffersToRelease) throws IOException {
     if (range == null) return null;
     DiskRangeList prev = range.prev;
     if (prev == null) {
@@ -544,6 +564,7 @@ public class RecordReaderUtils {
         boolean hasReplaced = false;
         while (len > 0) {
           ByteBuffer partial = zcr.readBuffer(len, false);
+          buffersToRelease.add(partial);
           BufferChunk bc = new BufferChunk(partial, off);
           if (!hasReplaced) {
             range.replaceSelfWith(bc);
