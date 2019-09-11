@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9ce38950_24d31e59",
+        "filename": "java/core/src/java/org/apache/orc/impl/RecordReaderUtils.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 321,
+      "author": {
+        "id": 1000034
+      },
+      "writtenOn": "2019-09-11T05:38:10Z",
+      "side": 1,
+      "message": "Why the extra !\u003d null check? Also, in https://gnarly.drem.io/gerrit/c/14461/2/oss/plugins/hive3/plugin/src/main/java/com/dremio/exec/store/hive/exec/DremioORCRecordUtils.java the else is to release the item back to the pool, should that be done here?",
+      "revId": "711c3dc9534f9f1092ed702762ebba5d9bbe3afc",
+      "serverId": "8ca9cf2d-83f4-421d-8552-b009c9e056de",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "c6d73e9b_a381bd16",
+        "filename": "java/core/src/java/org/apache/orc/impl/RecordReaderUtils.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 567,
+      "author": {
+        "id": 1000034
+      },
+      "writtenOn": "2019-09-11T05:38:10Z",
+      "side": 1,
+      "message": "When would this ever be non-null?",
+      "revId": "711c3dc9534f9f1092ed702762ebba5d9bbe3afc",
+      "serverId": "8ca9cf2d-83f4-421d-8552-b009c9e056de",
+      "unresolved": true
+    }
+  ]
+}
