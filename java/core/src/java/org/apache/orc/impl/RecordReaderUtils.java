@@ -225,7 +225,7 @@ public class RecordReaderUtils {
             case ROW_INDEX:
               if (included == null || included[column]) {
                 ByteBuffer bb = range.getData().duplicate();
-                bb.position((int) (offset - range.getOffset()));
+                bb.position((int) (bb.position() + offset - range.getOffset()));
                 bb.limit((int) (bb.position() + stream.getLength()));
                 indexes[column] = OrcProto.RowIndex.parseFrom(
                     InStream.createCodedInputStream("index",
@@ -237,7 +237,7 @@ public class RecordReaderUtils {
             case BLOOM_FILTER_UTF8:
               if (sargColumns != null && sargColumns[column]) {
                 ByteBuffer bb = range.getData().duplicate();
-                bb.position((int) (offset - range.getOffset()));
+                bb.position((int) (bb.position() + offset - range.getOffset()));
                 bb.limit((int) (bb.position() + stream.getLength()));
                 bloomFilterIndices[column] = OrcProto.BloomFilterIndex.parseFrom
                     (InStream.createCodedInputStream("bloom_filter",
