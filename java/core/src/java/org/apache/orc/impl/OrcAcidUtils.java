@@ -69,13 +69,18 @@ public class OrcAcidUtils {
   }
 
   private static final Charset utf8 = Charset.forName("UTF-8");
-  private static final CharsetDecoder utf8Decoder = utf8.newDecoder();
+  private static final ThreadLocal<CharsetDecoder> utf8Decoder = new ThreadLocal<CharsetDecoder>() {
+    @Override
+    protected CharsetDecoder initialValue() {
+      return utf8.newDecoder();
+    }
+  };
 
   public static AcidStats parseAcidStats(Reader reader) {
     if (reader.hasMetadataValue(ACID_STATS)) {
       try {
         ByteBuffer val = reader.getMetadataValue(ACID_STATS).duplicate();
-        return new AcidStats(utf8Decoder.decode(val).toString());
+        return new AcidStats(utf8Decoder.get().decode(val).toString());
       } catch (CharacterCodingException e) {
         throw new IllegalArgumentException("Bad string encoding for " +
             ACID_STATS, e);
