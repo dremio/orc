@@ -1,0 +1,7 @@
+Verified+1: jenkins (via gerrit) <jenkins@dremio.com>
+Code-Review+2: Vivekanand Vellanki <vivek@dremio.com>
+Submitted-by: Thippana Vamsi Kalyan <vamsi@dremio.com>
+Submitted-at: Mon, 27 Jul 2020 13:39:40 +0000
+Reviewed-on: https://gerrit.drem.io/gerrit/c/orc/+/18812
+Project: orc
+Branch: refs/heads/branch-1.5.1-dremio
