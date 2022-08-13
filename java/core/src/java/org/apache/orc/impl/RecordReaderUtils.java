@@ -40,6 +40,7 @@ import org.apache.orc.CompressionKind;
 import org.apache.orc.DataReader;
 import org.apache.orc.OrcFile;
 import org.apache.orc.OrcProto;
+import org.apache.orc.Reader;
 import org.apache.orc.StripeInformation;
 import org.apache.orc.TypeDescription;
 
@@ -148,7 +149,7 @@ public class RecordReaderUtils {
 
   private static class DefaultDataReader implements DataReader {
     private FSDataInputStream file = null;
-    private ByteBufferAllocatorPool pool;
+    private Reader.ZeroCopyPoolShim pool;
     private HadoopShims.ZeroCopyReaderShim zcr = null;
     private final FileSystem fs;
     private final Path path;
@@ -174,7 +175,11 @@ public class RecordReaderUtils {
       this.file = fs.open(path);
       if (useZeroCopy) {
         // ZCR only uses codec for boolean checks.
-        pool = new ByteBufferAllocatorPool();
+        if (properties.getZeroCopyPoolShim() == null) {
+          pool = new ByteBufferAllocatorPool();
+        } else {
+          pool = properties.getZeroCopyPoolShim();
+        }
         zcr = RecordReaderUtils.createZeroCopyShim(file, codec, pool);
       } else {
         zcr = null;
@@ -637,18 +642,18 @@ public class RecordReaderUtils {
   }
 
   static HadoopShims.ZeroCopyReaderShim createZeroCopyShim(FSDataInputStream file,
-      CompressionCodec codec, ByteBufferAllocatorPool pool) throws IOException {
+      CompressionCodec codec, HadoopShims.ByteBufferPoolShim byteBufferPoolShim) throws IOException {
     if ((codec == null || ((codec instanceof DirectDecompressionCodec)
             && ((DirectDecompressionCodec) codec).isAvailable()))) {
       /* codec is null or is available */
-      return SHIMS.getZeroCopyReader(file, pool);
+      return SHIMS.getZeroCopyReader(file, byteBufferPoolShim);
     }
     return null;
   }
 
   // this is an implementation copied from ElasticByteBufferPool in hadoop-2,
   // which lacks a clear()/clean() operation
-  public final static class ByteBufferAllocatorPool implements HadoopShims.ByteBufferPoolShim {
+  public final static class ByteBufferAllocatorPool implements Reader.ZeroCopyPoolShim {
     private static final class Key implements Comparable<Key> {
       private final int capacity;
       private final long insertionGeneration;
@@ -697,6 +702,7 @@ public class RecordReaderUtils {
       return direct ? directBuffers : buffers;
     }
 
+    @Override
     public void clear() {
       buffers.clear();
       directBuffers.clear();

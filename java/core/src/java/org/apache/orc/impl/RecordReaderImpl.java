@@ -247,7 +247,8 @@ public class RecordReaderImpl implements RecordReader {
               .withPath(fileReader.path)
               .withTypeCount(types.size())
               .withZeroCopy(zeroCopy)
-              .build());
+              .withZeroCopyPoolShim(options.getZeroCopyPoolShim())
+	      .build());
     }
     this.dataReader.open();
     firstRow = skippedRows;

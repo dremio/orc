@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.ql.io.sarg.SearchArgument;
+import org.apache.orc.impl.HadoopShims;
 
 /**
  * The interface for reading ORC files.
@@ -146,6 +147,16 @@ public interface Reader {
   OrcProto.FileTail getFileTail();
 
   /**
+   * Handles buffer allocation and release for ORC zero copy
+   */
+  interface ZeroCopyPoolShim extends HadoopShims.ByteBufferPoolShim {
+    /**
+     * Clear any internal data structures in the zero copy pool shim. Invoked when the reader is closed
+     */
+    void clear();
+  }
+
+  /**
    * Options for creating a RecordReader.
    */
   public static class Options implements Cloneable {
@@ -162,6 +173,7 @@ public interface Reader {
     private boolean forcePositionalEvolution;
     private boolean isSchemaEvolutionCaseAware =
         (boolean) OrcConf.IS_SCHEMA_EVOLUTION_CASE_SENSITIVE.getDefaultValue();
+    private ZeroCopyPoolShim zeroCopyPoolShim = null;
 
     public Options() {
       // PASS
@@ -230,6 +242,11 @@ public interface Reader {
 
     public Options dataReader(DataReader value) {
       this.dataReader = value;
+      return this;
+    }
+
+    public Options zeroCopyPoolShim(ZeroCopyPoolShim value) {
+      this.zeroCopyPoolShim = value;
       return this;
     }
 
@@ -329,12 +346,17 @@ public interface Reader {
       return isSchemaEvolutionCaseAware;
     }
 
+    public ZeroCopyPoolShim getZeroCopyPoolShim() {
+      return zeroCopyPoolShim;
+    }
+
     public Options clone() {
       try {
         Options result = (Options) super.clone();
         if (dataReader != null) {
           result.dataReader = dataReader.clone();
         }
+        result.zeroCopyPoolShim = zeroCopyPoolShim;
         return result;
       } catch (CloneNotSupportedException e) {
         throw new UnsupportedOperationException("uncloneable", e);
