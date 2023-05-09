@@ -1,0 +1,7 @@
+Verified+1: jenkins (via gerrit) <jenkins@dremio.com>
+Code-Review+2: Dan Huff <dan.huff@dremio.com>
+Submitted-by: Dan Huff <dan.huff@dremio.com>
+Submitted-at: Tue, 09 May 2023 21:26:54 +0000
+Reviewed-on: https://gerrit.drem.io/gerrit/c/orc/+/49976
+Project: orc
+Branch: refs/heads/branch-1.5.1-dremio
