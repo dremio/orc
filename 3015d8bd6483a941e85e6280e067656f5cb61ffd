@@ -1,0 +1,7 @@
+Code-Review+2: Vishal Boddu <vishal.boddu@dremio.com>
+Verified+1: jenkins (via gerrit) <jenkins@dremio.com>
+Submitted-by: Vishal Boddu <vishal.boddu@dremio.com>
+Submitted-at: Fri, 13 Dec 2024 20:51:05 +0000
+Reviewed-on: https://gerrit.drem.io/gerrit/c/orc/+/63086
+Project: orc
+Branch: refs/heads/branch-1.5.1-dremio
